@@ -12,7 +12,6 @@ int  main() {
 	WSAStartup(ver, &data);
 
 
-
 	WSACleanup();
 	return 0;
 }

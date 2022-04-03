@@ -6,6 +6,10 @@
 #include <WinSock2.h>
 #include <stdio.h>
 
+struct DataPackage {
+	int age;
+	char name[32];
+};
 
 int  main() {
 
@@ -69,6 +73,10 @@ int  main() {
 			//7. send想客户端发送一条数据 
 			char msgBuf[] = "80.";
 			send(_cSocket, msgBuf, strlen(msgBuf) + 1, 0);
+		}
+		else if (0 == strcmp(_recvBuf, "getInfo")) {
+			DataPackage dp = {80, "小强"};
+			send(_cSocket, (const char*)&dp, sizeof(DataPackage), 0);
 		}
 		else {
 			//7. send想客户端发送一条数据 
