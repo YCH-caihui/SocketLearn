@@ -9,7 +9,9 @@
 
 enum CMD {
 	CMD_LOGIN, 
+	CMD_LOGIN_RESULT,
 	CMD_LOGOUT,
+	CMD_LOGOUT_RESULT,
 	CMD_ERROR
 };
 
@@ -20,22 +22,44 @@ struct DataHeader {
 };
 
 //消息体
-struct Login {
+struct Login : public DataHeader {
 	char userName[32];
 	char passWord[32];
+
+	Login() {
+		dataLenth = sizeof(Login);
+		cmd = CMD_LOGIN;
+	}
 };
 
 
-struct LoginResult {
+struct LoginResult : public DataHeader {
 	int result;
+	
+	LoginResult() {
+		dataLenth = sizeof(LoginResult);
+		cmd = CMD_LOGIN_RESULT;
+		result = 0;
+	}
 };
 
-struct LogOut {
+struct LogOut : public DataHeader {
 	char userName[32];
+
+	LogOut() {
+		dataLenth = sizeof(LogOut);
+		cmd = CMD_LOGOUT;
+	}
 };
 
-struct LogOutResult {
+struct LogOutResult : public DataHeader {
 	int result;
+
+	LogOutResult() {
+		dataLenth = sizeof(LogOutResult);
+		cmd = CMD_LOGOUT_RESULT;
+		result = 0;
+	}
 };
 
 int  main() {
@@ -89,25 +113,24 @@ int  main() {
 			printf("客户端已退出，任务结束");
 			break;
 		}
-		printf("收到命令: %d 数据长度:%d \n", header.cmd, header.dataLenth);
+		
 
 		switch (header.cmd) {
 		case CMD_LOGIN: {
 			Login login = {};
-			recv(_cSocket, (char*)&login, sizeof(Login), 0);
+			memset(&login, 0, sizeof(Login));
+			recv(_cSocket, (char*)&login + sizeof(DataHeader), sizeof(Login) - sizeof(DataHeader), 0);
+			printf("接受到CMD_LOGIN  数据长度:%d  userName:%s  passworkd:%s", login.dataLenth, login.userName, login.passWord);
 			//忽略判断用户名密码是否正确的过程
-
-			LoginResult resutIn = { 1 };
-			send(_cSocket, (char*)&header, sizeof(DataHeader), 0);
+			LoginResult resutIn;
 			send(_cSocket, (char*)&resutIn, sizeof(LoginResult), 0);
 			break;
 		}
 		case CMD_LOGOUT: {
 			LogOut loginOut = {};
-			recv(_cSocket, (char*)&loginOut, sizeof(LogOut), 0);
-
-			LogOutResult resultOut = { 1 };
-			send(_cSocket, (char*)&header, sizeof(DataHeader), 0);
+			recv(_cSocket, (char*)&loginOut + sizeof(DataHeader), sizeof(LogOut) - sizeof(DataHeader), 0);
+			printf("接受到CMD_LOGOUT 数据长度:%d  userName:%s", loginOut.dataLenth, loginOut.userName);
+			LogOutResult resultOut;
 			send(_cSocket, (char*)&resultOut, sizeof(LogOutResult), 0);
 			break;
 		}
