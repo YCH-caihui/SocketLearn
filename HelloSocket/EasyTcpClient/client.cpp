@@ -5,6 +5,38 @@
 #include <stdio.h>
 
 
+
+enum CMD {
+	CMD_LOGIN,
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+
+//消息头
+struct DataHeader {
+	short dataLenth;
+	short cmd;
+};
+
+//消息体
+struct Login {
+	char userName[32];
+	char passWord[32];
+};
+
+
+struct LoginResult {
+	int result;
+};
+
+struct LogOut {
+	char userName[32];
+};
+
+struct LogOutResult {
+	int result;
+};
+
 struct DataPackage {
 	int age;
 	char name[32];
@@ -53,17 +85,36 @@ int  main() {
 			printf("收到任务结束");
 			break;
 		}
-		else {
-			//5.向服务器发送请求命令
-			send(_sock, cmdBuf, strlen(cmdBuf) + 1, 0);
-		}
+		else if( 0 == strcmp(cmdBuf, "login")) {
+			Login login = {"yyds", "yyds_password"};
+			DataHeader dh = {sizeof(login), CMD_LOGIN};
 
-		//6.接收服务器信息 recv
-		char recvBuf[256] = {};
-		int nLen = recv(_sock, recvBuf, 256, 0);
-		if (nLen > 0) {
-			DataPackage* dp = (DataPackage*)recvBuf;
-			printf("接收到数据：年龄%d   姓名:%s  \n", dp->age, dp->name);
+			send(_sock, (const char *)&dh, sizeof(DataHeader), 0);
+			send(_sock, (const char*)&login, sizeof(Login), 0);
+
+			//接收服务器返回的数据 
+			DataHeader retHeader = {};
+			LoginResult loginResult = {};
+			recv(_sock, (char *)&retHeader, sizeof(DataHeader), 0);
+			recv(_sock, (char*)&loginResult, sizeof(LoginResult), 0);
+			printf("LoginResult: %d    \n", loginResult.result);
+		}
+		else if (0 == strcmp(cmdBuf, "logout")) {
+			LogOut  logOut = {};
+			DataHeader dh = {sizeof(logOut), CMD_LOGOUT };
+
+			send(_sock, (const char*)&dh, sizeof(DataHeader), 0);
+			send(_sock, (const char *)&logOut, sizeof(LogOut), 0);
+
+			//接受服务器返回的数据
+			DataHeader retHeader = {};
+			LogOutResult logOutResult = {};
+			recv(_sock, (char*)&retHeader, sizeof(DataHeader), 0);
+			recv(_sock, (char *)&logOutResult, sizeof(LogOutResult), 0);
+			printf(" LogOutResult : %d   \n", logOutResult.result);
+		} 
+		else {
+			printf("不支持的命令，请重新输入  \n");
 		}
 
 	}
