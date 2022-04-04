@@ -6,9 +6,36 @@
 #include <WinSock2.h>
 #include <stdio.h>
 
-struct DataPackage {
-	int age;
-	char name[32];
+
+enum CMD {
+	CMD_LOGIN, 
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+
+//消息头
+struct DataHeader {
+	short dataLenth;
+	short cmd;
+};
+
+//消息体
+struct Login {
+	char userName[32];
+	char passWord[32];
+};
+
+
+struct LoginResult {
+	int result;
+};
+
+struct LogOut {
+	char userName[32];
+};
+
+struct LogOutResult {
+	int result;
 };
 
 int  main() {
@@ -54,37 +81,43 @@ int  main() {
 
 	char _recvBuf[128] = {};
 	while (true) {
-		//5.接受客户端数据
-		int nLen = recv(_cSocket, _recvBuf, 128, 0);
-		if (nLen <= 0) {
-			printf("客户端已推出，任务结束");
+
+		DataHeader header = {};
+		int nLen = recv(_cSocket, (char *)&header, sizeof(DataHeader), 0);
+		if (nLen <= 0)
+		{
+			printf("客户端已退出，任务结束");
 			break;
 		}
+		printf("收到命令: %d 数据长度:%d \n", header.cmd, header.dataLenth);
 
-		printf("收到命令: %s", _recvBuf);
+		switch (header.cmd) {
+		case CMD_LOGIN: {
+			Login login = {};
+			recv(_cSocket, (char*)&login, sizeof(Login), 0);
+			//忽略判断用户名密码是否正确的过程
 
-		//6.处理请求
-		if (0 == strcmp(_recvBuf, "getName")) {
-			//7. send想客户端发送一条数据 
-			char msgBuf[] = "xiao qiang..";
-			send(_cSocket, msgBuf, strlen(msgBuf) + 1, 0);
+			LoginResult resutIn = { 1 };
+			send(_cSocket, (char*)&header, sizeof(DataHeader), 0);
+			send(_cSocket, (char*)&resutIn, sizeof(LoginResult), 0);
+			break;
 		}
-		else if (0 == strcmp(_recvBuf, "getAge")) {
-			//7. send想客户端发送一条数据 
-			char msgBuf[] = "80.";
-			send(_cSocket, msgBuf, strlen(msgBuf) + 1, 0);
+		case CMD_LOGOUT: {
+			LogOut loginOut = {};
+			recv(_cSocket, (char*)&loginOut, sizeof(LogOut), 0);
+
+			LogOutResult resultOut = { 1 };
+			send(_cSocket, (char*)&header, sizeof(DataHeader), 0);
+			send(_cSocket, (char*)&resultOut, sizeof(LogOutResult), 0);
+			break;
 		}
-		else if (0 == strcmp(_recvBuf, "getInfo")) {
-			DataPackage dp = {80, "小强"};
-			send(_cSocket, (const char*)&dp, sizeof(DataPackage), 0);
+		default: {
+			header.cmd = CMD_ERROR;
+			header.dataLenth = 0;
+			send(_cSocket, (char*)&header, sizeof(DataHeader), 0);
+			break;
 		}
-		else {
-			//7. send想客户端发送一条数据 
-			char msgBuf[] = "???????..";
-			send(_cSocket, msgBuf, strlen(msgBuf) + 1, 0);
-		}
-	
-	
+		} 
 	
 	}
 	//8 关闭套接字closesocket
