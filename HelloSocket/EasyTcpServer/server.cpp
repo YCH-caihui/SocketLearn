@@ -158,7 +158,9 @@ int  main() {
 		for (int n = (int)g_clients.size() - 1; n >= 0; n--) {
 			FD_SET(g_clients[n], &fdRead);
 		}
-		int ret = select(_sock + 1, &fdRead, &fdWrite, &fdExp, NULL);
+
+		timeval t = {0, 0};
+		int ret = select(_sock + 1, &fdRead, &fdWrite, &fdExp, &t);
 		if (ret < 0) {
 			//出错
 			printf("select 任务结束 \n");
