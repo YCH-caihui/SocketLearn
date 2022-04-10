@@ -5,12 +5,12 @@
 #include <stdio.h>
 
 
-
 enum CMD {
-	CMD_LOGIN, 
+	CMD_LOGIN,
 	CMD_LOGIN_RESULT,
 	CMD_LOGOUT,
 	CMD_LOGOUT_RESULT,
+	CMD_NEW_USER_JOIN,
 	CMD_ERROR
 };
 
@@ -34,7 +34,7 @@ struct Login : public DataHeader {
 
 struct LoginResult : public DataHeader {
 	int result;
-	
+
 	LoginResult() {
 		dataLenth = sizeof(LoginResult);
 		cmd = CMD_LOGIN_RESULT;
@@ -61,6 +61,62 @@ struct LogOutResult : public DataHeader {
 	}
 };
 
+struct NewUserJoin : public DataHeader {
+
+	int sock;
+
+	NewUserJoin() {
+		dataLenth = sizeof(NewUserJoin);
+		cmd = CMD_NEW_USER_JOIN;
+		sock = 0;
+	}
+};
+
+int processor(SOCKET _cSocket) {
+	char szRecv[1024] = {};
+
+	int nLen = recv(_cSocket, szRecv, sizeof(DataHeader), 0);
+	if (nLen <= 0)
+	{
+		printf("与服务器断开链接,任务结束");
+		return -1;
+	}
+
+	DataHeader* header = (DataHeader*)szRecv;
+
+
+	switch (header->cmd) {
+	case CMD_LOGIN_RESULT: {
+		recv(_cSocket, szRecv + sizeof(DataHeader), sizeof(LoginResult) - sizeof(DataHeader), 0);
+		LoginResult* login = (LoginResult*)&szRecv;
+		printf("接受到CMD_LOGIN_RESULT  数据长度:%d  Result:%d   \n", login->dataLenth, login->result);
+	
+		break;
+	}
+	case CMD_LOGOUT_RESULT: {
+		recv(_cSocket, szRecv + sizeof(DataHeader), sizeof(LogOutResult) - sizeof(DataHeader), 0);
+		LogOutResult* login = (LogOutResult*)&szRecv;
+		printf("接受到CMD_LOGOUT_RESULT  数据长度:%d  Result:%d   \n", login->dataLenth, login->result);
+		break;
+	}
+	case CMD_NEW_USER_JOIN: {
+		recv(_cSocket, szRecv + sizeof(DataHeader), sizeof(NewUserJoin) - sizeof(DataHeader), 0);
+		NewUserJoin* login = (NewUserJoin*)&szRecv;
+		printf("接受到CMD_NEW_USER_JOIN  数据长度:%d  sock:%d   \n", login->dataLenth, login->sock);
+		break;
+	}
+				   
+	default: {
+		DataHeader header;
+		header.cmd = CMD_ERROR;
+		header.dataLenth = sizeof(DataHeader);
+		send(_cSocket, (char*)&header, sizeof(DataHeader), 0);
+		break;
+	}
+	}
+}
+
+
 int  main() {
 
 	//windows 启动socket环境
@@ -84,50 +140,43 @@ int  main() {
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(4567);
 	_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-	int ret =  connect(_sock, (sockaddr *) & _sin, sizeof(sockaddr_in));
+	int ret =  connect(_sock, (sockaddr *)&_sin, sizeof(sockaddr_in));
 	if (ret == SOCKET_ERROR) {
 		printf("错误，连接socket失败 \n");
 		return -1;
 	}
 	else {
 		printf("建立socket 成功.. \n");
-	
 	}
 
 	char cmdBuf[128] = {};
 	while (true) {
-		//3.输入请求命令
-		printf("请输入命令:");
-		scanf("%s", cmdBuf);
-		//4.处理请求命令
-		if (0 == strcmp(cmdBuf,"exit")) {
-			printf("收到任务结束");
+
+		fd_set fdReads;
+		FD_ZERO(&fdReads);
+		FD_SET(_sock, &fdReads);
+		timeval t = { 0, 0 };
+		int ret = select(_sock, &fdReads, 0, 0, &t);
+		if (ret < 0) {
+			printf("select任务结束  \n");
 			break;
 		}
-		else if( 0 == strcmp(cmdBuf, "login")) {
-			Login login;
-			strcpy(login.userName, "yyds");
-			strcpy(login.passWord, "yyds passoword");
-			send(_sock, (const char*)&login, sizeof(Login), 0);
 
-			//接收服务器返回的数据 
-			LoginResult loginResult = {};
-			recv(_sock, (char*)&loginResult, sizeof(LoginResult), 0);
-			printf("LoginResult: %d    \n", loginResult.result);
-		}
-		else if (0 == strcmp(cmdBuf, "logout")) {
-			LogOut  logOut = {};
-			strcpy(logOut.userName, "yyds");
-			send(_sock, (const char *)&logOut, sizeof(LogOut), 0);
+		if (FD_ISSET(_sock, &fdReads)) {
+			FD_CLR(_sock, &fdReads);
+			if (-1 == processor(_sock)) {
+				printf("select任务结束\n");
+				break;
+			}
 
-			//接受服务器返回的数据
-			LogOutResult logOutResult = {};
-			recv(_sock, (char *)&logOutResult, sizeof(LogOutResult), 0);
-			printf(" LogOutResult : %d   \n", logOutResult.result);
-		} 
-		else {
-			printf("不支持的命令，请重新输入  \n");
 		}
+
+		printf("空闲时间处理其他业务.. \n");
+		Login login;
+		strcpy(login.userName, "yyds");
+		strcpy(login.passWord, "yyds password");
+		send(_sock, (const char *)&login, sizeof(Login), 0);
+		Sleep(3);
 
 	}
 

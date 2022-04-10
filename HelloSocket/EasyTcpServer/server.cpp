@@ -13,6 +13,7 @@ enum CMD {
 	CMD_LOGIN_RESULT,
 	CMD_LOGOUT,
 	CMD_LOGOUT_RESULT,
+	CMD_NEW_USER_JOIN,
 	CMD_ERROR
 };
 
@@ -60,6 +61,17 @@ struct LogOutResult : public DataHeader {
 		dataLenth = sizeof(LogOutResult);
 		cmd = CMD_LOGOUT_RESULT;
 		result = 0;
+	}
+};
+
+struct NewUserJoin : public DataHeader {
+
+	int sock;
+
+	NewUserJoin() {
+		dataLenth = sizeof(NewUserJoin);
+		cmd = CMD_NEW_USER_JOIN;
+		sock = 0;
 	}
 };
 
@@ -169,7 +181,7 @@ int  main() {
 
 
 		
-		if (FD_ISSET(_sock, &fdRead))  {
+		if (FD_ISSET(_sock, &fdRead)) {
 			FD_CLR(_sock, &fdRead);
 			//4.accept 等待接受客户端连接
 			sockaddr_in clientAddr = {};
@@ -181,6 +193,14 @@ int  main() {
 				return -1;
 			}
 			printf("新客户端加入：Socket = %d, IP = %s \n", (int)_cSocket, inet_ntoa(clientAddr.sin_addr));
+
+
+			for (int n = (int)g_clients.size() - 1; n >= 0; n--) {
+				NewUserJoin userJoin;
+				userJoin.sock = _cSocket;
+				send(g_clients[n], (const char *)&userJoin, sizeof(NewUserJoin), 0);
+			}
+
 			g_clients.push_back(_cSocket);
 		}
 
