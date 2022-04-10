@@ -192,14 +192,17 @@ int  main() {
 				printf("错误，接受到无效的客户端socket.. \n");
 				return -1;
 			}
+			else {
+				for (int n = (int)g_clients.size() - 1; n >= 0; n--) {
+					NewUserJoin userJoin;
+					userJoin.sock = _cSocket;
+					send(g_clients[n], (const char*)&userJoin, sizeof(NewUserJoin), 0);
+				}
+			}
 			printf("新客户端加入：Socket = %d, IP = %s \n", (int)_cSocket, inet_ntoa(clientAddr.sin_addr));
 
 
-			for (int n = (int)g_clients.size() - 1; n >= 0; n--) {
-				NewUserJoin userJoin;
-				userJoin.sock = _cSocket;
-				send(g_clients[n], (const char *)&userJoin, sizeof(NewUserJoin), 0);
-			}
+		
 
 			g_clients.push_back(_cSocket);
 		}
