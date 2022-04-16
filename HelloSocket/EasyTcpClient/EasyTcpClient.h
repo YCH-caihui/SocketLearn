@@ -141,7 +141,12 @@ public:
 		}
 
 		DataHeader* header = (DataHeader*)szRecv;
-		recv(_cSocket, szRecv + sizeof(DataHeader), header->dataLenth - sizeof(DataHeader), 0);
+		int mLen = recv(_cSocket, szRecv + sizeof(DataHeader), header->dataLenth - sizeof(DataHeader), 0);
+		if (mLen <= 0)
+		{
+			printf("二次数据接收失败");
+		}
+
 		onNetMsg(header);
 
 	}
@@ -153,18 +158,18 @@ public:
 		switch (header->cmd) {
 		case CMD_LOGIN_RESULT: {
 		
-			LoginResult* login = (LoginResult*)&header;
+			LoginResult* login = reinterpret_cast<LoginResult *>(header);
 			printf("接受到CMD_LOGIN_RESULT  数据长度:%d  Result:%d   \n", login->dataLenth, login->result);
 
 			break;
 		}
 		case CMD_LOGOUT_RESULT: {
-			LogOutResult* login = (LogOutResult*)&header;
+			LogOutResult* login = reinterpret_cast<LogOutResult *>(header);
 			printf("接受到CMD_LOGOUT_RESULT  数据长度:%d  Result:%d   \n", login->dataLenth, login->result);
 			break;
 		}
 		case CMD_NEW_USER_JOIN: {
-			NewUserJoin* login = (NewUserJoin*)&header;
+			NewUserJoin* login = reinterpret_cast<NewUserJoin *>(header);
 			printf("接受到CMD_NEW_USER_JOIN  数据长度:%d  sock:%d   \n", login->dataLenth, login->sock);
 			break;
 		}
