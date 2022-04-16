@@ -4,8 +4,9 @@
 #include <WinSock2.h>
 #include <stdio.h>
 #include <thread>
+#include "EasyTcpClient.h"
 
-
+/*
 enum CMD {
 	CMD_LOGIN,
 	CMD_LOGIN_RESULT,
@@ -117,13 +118,16 @@ int processor(SOCKET _cSocket) {
 	}
 }
 
+bool g_Run = true;
+
 void cmdThread(SOCKET sock) {
 	char cmdBuf[256] = {};
 	while (true) {
 	scanf("%s", cmdBuf);
 	if (0 == strcmp(cmdBuf, "exit")) {
+		g_Run = false;
 		printf("退出 \n");
-		return;
+		break;
 	}
 	else if (0 == strcmp(cmdBuf, "login")) {
 		Login login;
@@ -138,9 +142,34 @@ void cmdThread(SOCKET sock) {
 	}
 }
  }
+ */
 
+bool g_bRun = true;
+void cmdThread(EasyTcpClient * client) {
+	char cmdBuf[256] = {};
+	while (true) {
+		scanf("%s", cmdBuf);
+		if (0 == strcmp(cmdBuf, "exit")) {
+			client->close();
+			printf("退出 \n");
+			break;
+		}
+		else if (0 == strcmp(cmdBuf, "login")) {
+			Login login;
+			strcpy(login.userName, "yyds");
+			strcpy(login.passWord, "yyds password");
+			client->sendData(&login);
+		}
+		else if (0 == strcmp(cmdBuf, "logout")) {
+			LogOut logout;
+			strcpy(logout.userName, "lyd");
+			client->sendData(&logout);
+		}
+	}
+}
 int  main() {
 
+	/*
 	//windows 启动socket环境
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA data;
@@ -173,7 +202,8 @@ int  main() {
 
 	//启动线程
 	std::thread t1(cmdThread, _sock);
-	while (true) {
+	t1.detach();
+	while (g_Run) {
 
 		fd_set fdReads;
 		FD_ZERO(&fdReads);
@@ -205,6 +235,21 @@ int  main() {
 	//7.关闭套接字closesocket
 	closesocket(_sock);
 	WSACleanup();
+	*/
+
+	EasyTcpClient client;
+	client.initSocket();
+	client.connectSocket("127.0.0.1", 4567);
+	std::thread t1(cmdThread, &client);
+	t1.detach();
+
+
+	while (client.isRun()) {
+		client.onRun();
+	}
+
+	client.close();
+	
 	getchar();
 	return 0;
 }
