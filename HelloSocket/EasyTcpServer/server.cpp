@@ -6,8 +6,10 @@
 #include <WinSock2.h>
 #include <stdio.h>
 #include <vector>
+#include "EasyTcpServer.h"
 
 
+/*
 enum CMD {
 	CMD_LOGIN, 
 	CMD_LOGIN_RESULT,
@@ -121,9 +123,12 @@ int processor(SOCKET _cSocket) {
 	}
 	}
 }
+*/
 
 
 int  main() {
+
+	/*
 
 	//windows 启动socket环境
 	WORD ver = MAKEWORD(2, 2);
@@ -203,10 +208,6 @@ int  main() {
 				}
 			}
 			printf("新客户端加入：Socket = %d, IP = %s \n", (int)_cSocket, inet_ntoa(clientAddr.sin_addr));
-
-
-		
-
 			g_clients.push_back(_cSocket);
 		}
 
@@ -230,5 +231,14 @@ int  main() {
 
 
 	WSACleanup();
+	*/
+
+	EasyTcpServer server;
+	server.initSocket();
+	server.bindSocket(4567);
+	server.listenSocket(5);
+	while (server.isRun()) {
+		server.onRun();
+	}
 	return 0;
 }
