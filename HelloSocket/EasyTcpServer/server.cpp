@@ -130,6 +130,9 @@ int  main() {
 	WSADATA data;
 	WSAStartup(ver, &data);
 
+	
+   
+
 	//用socket API建立简易TCP 服务器
 	//1.建立一个socket 套接字
  	SOCKET _sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);

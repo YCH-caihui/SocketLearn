@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <WinSock2.h>
 #include <stdio.h>
+#include <thread>
 
 
 enum CMD {
@@ -116,6 +117,27 @@ int processor(SOCKET _cSocket) {
 	}
 }
 
+void cmdThread(SOCKET sock) {
+	char cmdBuf[256] = {};
+	while (true) {
+	scanf("%s", cmdBuf);
+	if (0 == strcmp(cmdBuf, "exit")) {
+		printf("退出 \n");
+		return;
+	}
+	else if (0 == strcmp(cmdBuf, "login")) {
+		Login login;
+		strcpy(login.userName, "yyds");
+		strcpy(login.passWord, "yyds password");
+		send(sock, (const char*)&login, sizeof(Login), 0);
+	}
+	else if (0 == strcmp(cmdBuf, "logout")) {
+		LogOut logout;
+		strcpy(logout.userName, "lyd");
+		send(sock, (const char*)&logout, sizeof(LogOut), 0);
+	}
+}
+ }
 
 int  main() {
 
@@ -149,7 +171,8 @@ int  main() {
 		printf("建立socket 成功.. \n");
 	}
 
-	char cmdBuf[128] = {};
+	//启动线程
+	std::thread t1(cmdThread, _sock);
 	while (true) {
 
 		fd_set fdReads;
@@ -171,11 +194,8 @@ int  main() {
 
 		}
 
-		printf("空闲时间处理其他业务.. \n");
-		Login login;
-		strcpy(login.userName, "yyds");
-		strcpy(login.passWord, "yyds password");
-		send(_sock, (const char *)&login, sizeof(Login), 0);
+	//	printf("空闲时间处理其他业务.. \n");
+		
 		Sleep(3);
 
 	}
